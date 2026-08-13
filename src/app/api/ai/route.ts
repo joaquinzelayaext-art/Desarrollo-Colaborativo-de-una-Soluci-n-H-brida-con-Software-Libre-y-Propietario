@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateResponse } from "@/lib/aiService";
+import { prisma } from "@/lib/prisma";
 
-// GET: Verificar que la API funciona
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    message: "API de IA funcionando correctamente",
-  });
-}
-
-// POST: Procesar un prompt
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -22,15 +14,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await generateResponse(prompt);
+    const aiResult = await generateResponse(prompt);
+    const respuestaIA = aiResult.response;
 
-    return NextResponse.json(result);
+    let user = await prisma.user.findFirst();
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: 'admin@hybridtech.com',
+          name: 'Administrador',
+        },
+      });
+    }
+
+    // Guardamos la consulta y la respuesta en la base de datos como un registro
+    const newRecord = await prisma.record.create({
+      data: {
+        title: `Consulta IA: ${prompt.slice(0, 30)}...`,
+        description: prompt,
+        processedData: respuestaIA,
+        userId: user.id,
+      },
+    });
+
+    // Devolvemos tanto la respuesta como el ID para la redirección
+    return NextResponse.json({ 
+      response: respuestaIA, 
+      recordId: newRecord.id 
+    });
 
   } catch (error) {
     console.error(error);
-
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: "Error interno del servidor al procesar la IA" },
       { status: 500 }
     );
   }

@@ -1,35 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import Link from 'next/link';
 
 interface RecordItem {
   id: string;
   title: string;
   description: string;
+  aiResponse?: string;
   createdAt: string;
 }
 
 export default function DashboardPage() {
   const [records, setRecords] = useState<RecordItem[]>([]);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [prompt, setPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [loadingAI, setLoadingAI] = useState(false);
+  // Estados para el formulario manual
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualDescription, setManualDescription] = useState('');
 
-  // Cargar registros al iniciar la página
+  // Estados para el asistente de IA
+  const [aiPrompt, setAiPrompt] = useState('');
+
   const fetchRecords = async () => {
     try {
       const res = await fetch('/api/records');
       const data = await res.json();
-      if (Array.isArray(data)) {
+      if (res.ok) {
         setRecords(data);
       }
-    } catch (error) {
-      console.error('Error cargando registros:', error);
+    } catch (err) {
+      console.error('Error al cargar registros:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,169 +40,212 @@ export default function DashboardPage() {
     fetchRecords();
   }, []);
 
-  const handleAI = async () => {
-  if (!prompt.trim()) return;
-
-  setLoadingAI(true);
-  setAiResponse('');
-
-  try {
-    const res = await fetch('/api/ai', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setAiResponse(data.response);
-    } else {
-      setAiResponse(data.error);
-    }
-  } catch (error) {
-    console.error(error);
-    setAiResponse('Error al conectar con el servicio.');
-  } finally {
-    setLoadingAI(false);
-  }
-};
-
-  // Enviar datos al backend
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Manejador para guardar registro manual
+  const handleManualSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!manualTitle.trim()) return;
 
-    setLoading(true);
     try {
       const res = await fetch('/api/records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({ title: manualTitle, description: manualDescription, type: 'manual' }),
       });
 
       if (res.ok) {
-        setTitle('');
-        setDescription('');
-        fetchRecords(); // Recargar la lista
+        setManualTitle('');
+        setManualDescription('');
+        fetchRecords();
       }
-    } catch (error) {
-      console.error('Error al guardar:', error);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Error al guardar registro manual:', err);
+    }
+  };
+
+  // Manejador para la consulta con IA
+  const handleAiSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+
+    try {
+      const res = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: `Consulta IA: ${aiPrompt.slice(0, 25)}...`, description: aiPrompt, type: 'ai' }),
+      });
+
+      if (res.ok) {
+        setAiPrompt('');
+        fetchRecords();
+      }
+    } catch (err) {
+      console.error('Error al procesar consulta con IA:', err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-12">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-400">Panel de Control</h1>
-            <p className="text-slate-400 text-sm">Gestiona los registros de la aplicación híbrida</p>
+    <div className="min-h-screen bg-gradient-to-b from-[#122017] via-[#0a110c] to-[#040705] text-zinc-100 selection:bg-emerald-500 selection:text-white p-6 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* Header Principal */}
+        <header className="flex justify-between items-center bg-[#0e1711] border border-[#1b2e21] rounded-2xl px-6 py-4 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-emerald-400 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20 text-xl">
+              H
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold tracking-tight text-white">HybridTech Workspace</h1>
+              <p className="text-xs text-emerald-400">Solución Híbrida Inteligente</p>
+            </div>
           </div>
           <Link 
             href="/"
-            className="text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg transition"
+            className="text-xs font-bold px-5 py-2.5 rounded-xl bg-gradient-to-l from-cyan-600 via-blue-600 to-white text-white shadow-lg shadow-cyan-600/30 hover:opacity-95 transition border border-cyan-400/30"
           >
             ← Volver al Inicio
           </Link>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl h-fit">
-            <h2 className="text-lg font-semibold mb-4 text-slate-200">Nuevo Registro</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Título</label>
-                <input 
-                  type="text" 
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ej. Análisis de tráfico DPI"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
-                  required
-                />
+        {/* Sección Superior: 3 Tarjetas (Registro Manual, Asistente IA, Estado del Sistema) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Tarjeta 1: Registro Manual */}
+          <div className="bg-[#0b130e] border border-[#1b2e21] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2.5 mb-4">
+                <span className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-800/50 text-emerald-400 text-sm">✏️</span>
+                <h2 className="font-bold text-white text-base">Registro Manual</h2>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Descripción</label>
-                <textarea 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Detalles del proceso..."
-                  rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 resize-none"
-                />
-              </div>
-              <button 
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg transition text-sm disabled:opacity-50"
-              >
-                {loading ? 'Guardando...' : 'Guardar Registro'}
-              </button>
-            </form>
+              <form onSubmit={handleManualSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Título del Registro</label>
+                  <input 
+                    type="text"
+                    value={manualTitle}
+                    onChange={(e) => setManualTitle(e.target.value)}
+                    placeholder="Ej. Arquitectura de Base de Datos"
+                    className="w-full bg-[#050806] border border-[#1d3224] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Descripción o Notas</label>
+                  <textarea 
+                    rows={3}
+                    value={manualDescription}
+                    onChange={(e) => setManualDescription(e.target.value)}
+                    placeholder="Agrega detalles relevantes..."
+                    className="w-full bg-[#050806] border border-[#1d3224] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-emerald-500 transition resize-none"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 hover:opacity-95 transition cursor-pointer"
+                >
+                  Guardar Registro
+                </button>
+              </form>
+            </div>
           </div>
 
-<div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl h-fit">
-  <h2 className="text-lg font-semibold mb-4 text-slate-200">
-    🤖 Asistente IA
-  </h2>
-
-  <textarea
-    value={prompt}
-    onChange={(e) => setPrompt(e.target.value)}
-    placeholder="Escribe una consulta para la IA..."
-    rows={4}
-    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm resize-none"
-  />
-
-  <button
-    onClick={handleAI}
-    disabled={loadingAI}
-    className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg font-medium"
-  >
-    {loadingAI ? "Consultando..." : "Consultar IA"}
-  </button>
-
-  {aiResponse && (
-    <div className="mt-4 bg-slate-950 border border-slate-800 rounded-lg p-3">
-      <p className="text-xs text-slate-400 mb-1">
-        Respuesta del Servicio Propietario
-      </p>
-
-      <p className="text-sm text-white">
-        {aiResponse}
-      </p>
-    </div>
-  )}
-</div>
-
-          <div className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-lg font-semibold mb-4 text-slate-200">Registros Almacenados</h2>
-            
-            {records.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                <p>No hay registros todavía.</p>
-                <p className="text-xs mt-1">Usa el formulario para agregar información a PostgreSQL.</p>
+          {/* Tarjeta 2: Asistente Inteligente IA */}
+          <div className="bg-[#0b130e] border border-[#1b2e21] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2.5 mb-4">
+                <span className="p-2 rounded-lg bg-cyan-950/80 border border-cyan-800/50 text-cyan-400 text-sm">🤖</span>
+                <h2 className="font-bold text-white text-base">Asistente Inteligente IA</h2>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {records.map((record) => (
-                  <div key={record.id} className="p-4 bg-slate-950 border border-slate-800 rounded-xl">
-                    <h3 className="font-semibold text-blue-400">{record.title}</h3>
-                    <p className="text-slate-300 text-sm mt-1">{record.description || 'Sin descripción'}</p>
-                    <span className="text-[10px] text-slate-500 mt-2 block">
-                      Creado el: {new Date(record.createdAt).toLocaleString()}
-                    </span>
+              <form onSubmit={handleAiSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Pregunta o Prompt</label>
+                  <textarea 
+                    rows={5}
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Ej. Explícame cómo estructurar una API REST segura..."
+                    className="w-full bg-[#050806] border border-[#1d3224] rounded-xl px-3.5 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 transition resize-none"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 hover:opacity-95 transition cursor-pointer"
+                >
+                  Consultar y Registrar IA
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Tarjeta 3: Estado del Sistema Híbrido */}
+          <div className="bg-[#0b130e] border border-[#1b2e21] rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h2 className="font-bold text-white text-base">Estado del Sistema Híbrido</h2>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                El sistema se comunica con bases de datos PostgreSQL en Neon y el SDK oficial de Google Generative AI en tiempo real.
+              </p>
+              <div className="space-y-2 pt-2 border-t border-[#1b2e21] text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-500">Base de Datos:</span>
+                  <span className="text-emerald-400 font-semibold">Conectado (Neon)</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-500">Modelo IA:</span>
+                  <span className="text-cyan-400 font-semibold">Gemini Activo</span>
+                </div>
+              </div>
+            </div>
+            <div className="pt-6 border-t border-[#1b2e21] text-[10px] text-zinc-600 text-right">
+              Desarrollo Colaborativo - 2026
+            </div>
+          </div>
+
+        </div>
+
+        {/* Sección Inferior: Registros y Consultas Almacenadas */}
+        <div className="bg-[#0b130e] border border-[#1b2e21] rounded-2xl p-6 shadow-xl space-y-6">
+          <div className="flex justify-between items-center border-b border-[#1b2e21] pb-4">
+            <h2 className="font-bold text-white text-base">Registros y Consultas Almacenadas</h2>
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-900/40">
+              {records.length} registros
+            </span>
+          </div>
+
+          {loading ? (
+            <p className="text-center text-zinc-500 py-10 animate-pulse text-sm">Cargando registros...</p>
+          ) : records.length === 0 ? (
+            <p className="text-center text-zinc-500 py-10 text-sm">No hay registros almacenados todavía.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {records.map((record) => {
+                const dateObj = new Date(record.createdAt);
+                const formattedDate = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()} - ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+                return (
+                  <div 
+                    key={record.id}
+                    className="bg-[#050806] border border-[#152319] rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-emerald-900/50 transition"
+                  >
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-cyan-400 text-sm sm:text-base">{record.title}</h3>
+                      <p className="text-xs text-zinc-400 line-clamp-1">{record.description || 'Sin descripción'}</p>
+                      <span className="block text-[11px] text-zinc-600 font-mono pt-1">{formattedDate}</span>
+                    </div>
+
+                    <Link 
+                      href={`/dashboard/${record.id}`}
+                      className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition shrink-0 flex items-center gap-1"
+                    >
+                      Ver detalle →
+                    </Link>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );

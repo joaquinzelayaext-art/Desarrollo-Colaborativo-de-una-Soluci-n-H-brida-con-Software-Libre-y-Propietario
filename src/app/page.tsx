@@ -2,42 +2,44 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-between">
-      {/* Navbar */}
-      <header className="px-6 py-4 flex justify-between items-center border-b border-slate-800">
-        <h1 className="text-xl font-bold tracking-wider text-blue-400">HybridTech App</h1>
-        <Link 
-          href="/dashboard"
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition"
-        >
-          Ir al Dashboard
-        </Link>
+    <div className="min-h-screen bg-gradient-to-b from-[#1b2e21] via-[#121f17] to-[#080c09] text-zinc-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+      {/* Barra superior con el nombre grande y limpio */}
+      <header className="px-8 py-6 flex justify-between items-center border-b border-[#274431]/40 bg-[#121f17]/90 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 text-xl">
+            H
+          </div>
+          <span className="text-2xl font-extrabold tracking-tight text-white">HybridTech App</span>
+        </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto">
-        <span className="bg-blue-500/10 text-blue-400 text-sm font-semibold px-3 py-1 rounded-full mb-4 border border-blue-500/20">
+      {/* Contenido principal centrado */}
+      <main className="flex-grow flex flex-col items-center justify-center px-6 text-center max-w-4xl mx-auto space-y-6">
+        <div className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-medium bg-[#1b2e21] text-emerald-300 border border-[#274431] shadow-inner">
           Solución Híbrida: Software Libre + Propietario
-        </span>
-        <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
+        </div>
+
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
           Plataforma de Gestión y Procesamiento Inteligente
-        </h2>
-        <p className="text-slate-400 text-lg md:text-xl mb-8 max-w-2xl">
+        </h1>
+
+        <p className="text-sm md:text-base text-zinc-400 max-w-xl leading-relaxed">
           Aplicación desarrollada con Next.js, TypeScript y PostgreSQL (Open Source) conectada a servicios seguros en la nube.
         </p>
-        <div className="flex gap-4">
-          <Link 
+
+        <div className="pt-4">
+          <Link
             href="/dashboard"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition"
+            className="inline-block bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold px-8 py-4 rounded-2xl shadow-xl shadow-cyan-600/30 transition transform hover:-translate-y-0.5 cursor-pointer text-base border border-cyan-400/30"
           >
             Comenzar Ahora
           </Link>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="text-center py-6 border-t border-slate-800 text-slate-500 text-sm">
-        Desarrollo Colaborativo - Solución Híbrida 2026
+      {/* Pie de página sutil */}
+      <footer className="py-6 text-center text-xs text-zinc-500 border-t border-[#1b2e21]">
+        Desarrollo Colaborativo - 2026
       </footer>
     </div>
   );
