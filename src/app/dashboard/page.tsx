@@ -16,6 +16,10 @@ export default function DashboardPage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [prompt, setPrompt] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [loadingAI, setLoadingAI] = useState(false);
+
   // Cargar registros al iniciar la página
   const fetchRecords = async () => {
     try {
@@ -32,6 +36,36 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchRecords();
   }, []);
+
+  const handleAI = async () => {
+  if (!prompt.trim()) return;
+
+  setLoadingAI(true);
+  setAiResponse('');
+
+  try {
+    const res = await fetch('/api/ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setAiResponse(data.response);
+    } else {
+      setAiResponse(data.error);
+    }
+  } catch (error) {
+    console.error(error);
+    setAiResponse('Error al conectar con el servicio.');
+  } finally {
+    setLoadingAI(false);
+  }
+};
 
   // Enviar datos al backend
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,6 +142,40 @@ export default function DashboardPage() {
               </button>
             </form>
           </div>
+
+<div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl h-fit">
+  <h2 className="text-lg font-semibold mb-4 text-slate-200">
+    🤖 Asistente IA
+  </h2>
+
+  <textarea
+    value={prompt}
+    onChange={(e) => setPrompt(e.target.value)}
+    placeholder="Escribe una consulta para la IA..."
+    rows={4}
+    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm resize-none"
+  />
+
+  <button
+    onClick={handleAI}
+    disabled={loadingAI}
+    className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-lg font-medium"
+  >
+    {loadingAI ? "Consultando..." : "Consultar IA"}
+  </button>
+
+  {aiResponse && (
+    <div className="mt-4 bg-slate-950 border border-slate-800 rounded-lg p-3">
+      <p className="text-xs text-slate-400 mb-1">
+        Respuesta del Servicio Propietario
+      </p>
+
+      <p className="text-sm text-white">
+        {aiResponse}
+      </p>
+    </div>
+  )}
+</div>
 
           <div className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
             <h2 className="text-lg font-semibold mb-4 text-slate-200">Registros Almacenados</h2>
